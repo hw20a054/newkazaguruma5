@@ -1,0 +1,195 @@
+<html>
+
+<head>
+    <title>three.js + ar.js</title>
+    <meta name="viewport" content="width=device-width, viewport-fit=cover, shrink-to-fit=no" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <canvas></canvas>
+    </div>
+    <!--❶ three.jsとAR.jsを読み込む-->
+    <script src="https://unpkg.com/three@0.127.0/build/three.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.3.3/three.js/build/ar.js"></script>
+    <script async>
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.querySelector('canvas'),
+            antialias: true,
+            alpha: true
+        });
+        const camera = new THREE.PerspectiveCamera();
+        const scene = new THREE.Scene();
+        const markerRoot = new THREE.Group();
+        const arToolkitContext = new THREEx.ArToolkitContext({
+            cameraParametersUrl: './camera.dat', // ❷ camera.datを読み込む
+            detectionMode: 'mono'
+        });
+        const arToolkitSource = new THREEx.ArToolkitSource({
+            sourceType: 'webcam'
+        });
+        const arMarkerControl = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+            type: 'pattern',
+            patternUrl: 'pattern.patt' // ❸ pattern.pattを読み込む
+        });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        window.addEventListener('resize', handleResize, {
+            passive: true
+        });
+
+        arToolkitContext.init(() => {
+            camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+        });
+
+        arToolkitSource.init(() => {
+            document.querySelector('.wrapper').appendChild(arToolkitSource.domElement); // ❹ videoタグを.wrapper配下に移動させる
+            setTimeout(handleResize, 400); // ❺ リサイズイベントを一度発火させる
+        });
+
+        scene.add(markerRoot);
+
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF);
+        directionalLight.position.set(1, 0, 1);
+        scene.add(directionalLight);
+
+
+        const geometry = new THREE.BufferGeometry();
+        const geometry2 = new THREE.BufferGeometry();
+
+        function createtriangle1(x, y, z, c) {
+
+            // create a simple square shape. We duplicate the top left and bottom right
+            // vertices because each vertex needs to appear once per triangle.
+            const vertices = new Float32Array([
+                x - 0.5, y, z - 0.5, // v0
+                x - 0.5, y, z, // v1
+                x, y, z // v2
+
+            ]);
+            // itemSize = 3 because there are 3 values (components) per vertex
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            const material = new THREE.MeshBasicMaterial({ color: c });
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+        }
+        function createtriangle2(x, y, z, c) {
+
+            // create a simple square shape. We duplicate the top left and bottom right
+            // vertices because each vertex needs to appear once per triangle.
+            const vertices2 = new Float32Array([
+                x, y, z - 1.0,
+                x - 0.5, y, z - 0.5,
+                x, y, z
+
+            ]);
+            // itemSize = 3 because there are 3 values (components) per vertex
+            geometry2.setAttribute('position', new THREE.BufferAttribute(vertices2, 3));
+            const material2 = new THREE.MeshBasicMaterial({ color: c });
+            const mesh2 = new THREE.Mesh(geometry2, material2);
+            return mesh2;
+        }
+
+        function createkazaguruma(x, y, z, c1, c2) {
+            const triangle1 = createtriangle1(0, 0, 0, c1);
+            const triangle2 = createtriangle2(0, 0, 0, c2);
+            const triangle3 = createtriangle1(0, 0, 0, c1);
+            const triangle4 = createtriangle2(0, 0, 0, c2);
+            triangle3.rotation.y += Math.PI / 2;
+            triangle4.rotation.y += Math.PI / 2;
+            const triangle5 = createtriangle1(0, 0, 0, c1);
+            const triangle6 = createtriangle2(0, 0, 0, c2);
+            triangle5.rotation.y += Math.PI;
+            triangle6.rotation.y += Math.PI;
+            const triangle7 = createtriangle1(0, 0, 0, c1);
+            const triangle8 = createtriangle2(0, 0, 0, c2);
+            triangle7.rotation.y += Math.PI + Math.PI / 2;
+            triangle8.rotation.y += Math.PI + Math.PI / 2;
+
+
+            triangle1.add(triangle2);
+            triangle1.add(triangle3);
+            triangle1.add(triangle4);
+            triangle1.add(triangle5);
+            triangle1.add(triangle6);
+            triangle1.add(triangle7);
+            triangle1.add(triangle8);
+            triangle1.position.set(x, y, z);
+            return triangle1;
+        }
+
+        function createtemoti(x, y, z) {
+            const temotigeometry = new THREE.PlaneGeometry(0.1, 2);
+            const temotimaterial = new THREE.MeshBasicMaterial({ color: 0xfffacd })
+            const temoti = new THREE.Mesh(temotigeometry, temotimaterial);
+            temoti.position.set(x, y - 0.1, z + 1);
+            temoti.rotation.x -= Math.PI / 180 * 90;
+            return temoti;
+        }
+
+        const kazaguruma = createkazaguruma(0, 0, 0, 0xff0000, 0xffff00);
+        const temoti = createtemoti(0, 0, 0);
+        const kazaguruma1 = createkazaguruma(1.8, 0, 1, 0x008000, 0x7fffd4);
+        const temoti1 = createtemoti(1.8, 0, 1);
+        const kazaguruma2 = createkazaguruma(-1.5, -2, -1, 0x0000ff, 0x87cefa);
+        const temoti2 = createtemoti(-1.5, -2, -1);
+        const kazaguruma3 = createkazaguruma(1.3, -1, -1, 0xffe4c4, 0xff8c00);
+        const temoti3 = createtemoti(1.3, -1, -1);
+        const kazaguruma4 = createkazaguruma(-1.2, 0.7, 0.8, 0x4b0082, 0x9370db);
+        const temoti4 = createtemoti(-1.2, 0.7, 0.8);
+
+        markerRoot.add(kazaguruma);
+        markerRoot.add(temoti);
+        markerRoot.add(temoti1);
+        markerRoot.add(kazaguruma1);
+        markerRoot.add(temoti2);
+        markerRoot.add(kazaguruma2);
+        markerRoot.add(temoti3);
+        markerRoot.add(kazaguruma3);
+        markerRoot.add(temoti4);
+        markerRoot.add(kazaguruma4);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            kazaguruma.rotation.y += Math.PI / 55;
+            kazaguruma1.rotation.y += Math.PI / 70;
+            kazaguruma2.rotation.y += Math.PI / 105;
+            kazaguruma3.rotation.y += Math.PI / 30;
+            kazaguruma4.rotation.y += Math.PI / 25;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        renderer.setAnimationLoop((delta) => {
+            if (arToolkitSource.ready) {
+                arToolkitContext.update(arToolkitSource.domElement);
+            }
+
+            renderer.render(scene, camera);
+        });
+
+        function handleResize() {
+            if (arToolkitSource.ready) {
+                arToolkitSource.onResize();
+                arToolkitSource.copySizeTo(renderer.domElement);
+            }
+
+            renderer.setPixelRatio(window.devicePixelRatio);
+        }
+    </script>
+</body>
+
+</html>

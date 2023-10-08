@@ -134,7 +134,7 @@
             const temotigeometry = new THREE.PlaneGeometry(0.1, 2);
             const temotimaterial = new THREE.MeshBasicMaterial({ color: 0xfffacd })
             const temoti = new THREE.Mesh(temotigeometry, temotimaterial);
-            temoti.position.set(x, y - 0.1, z + 1);
+            temoti.position.set(x, y - 0.15, z + 1);
             temoti.rotation.x -= Math.PI / 180 * 90;
             return temoti;
         }
